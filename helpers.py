@@ -2,9 +2,6 @@ import gensim.downloader as api
 import csv
 import json
 
-
-
-
 def find_similar_words(word_embedding, words):
     '''
     Given a list of a words, find the ten most similar words to each. Return a dictionary
@@ -205,11 +202,9 @@ def calculate_transition_prob(ant_list):
     transition_map = {}
 
     for word, ants in ant_list.items():
-
         probabilities = {}
 
         for ant in ants:
-
             # transition probability is (# occurences of antonym i / total number of antonyms)
             probabilities[ant] = probabilities.get(ant, ants.count(ant)/len(ants))
 
@@ -237,3 +232,32 @@ def find_most_likely_transition(trans_map):
         likely_trans[word] = max(ants, key=ants.get)
 
     return likely_trans
+
+
+def is_morphological_negation(word, antonym, lowercase = True):
+    '''
+    Given an original word and an antonym, check if the antonym is a morphological negation
+    of the word (in-, im-, un-, dis-, ir- + word). Returns a boolean.
+
+    Keyword arguments:
+    word -- the origial word
+    antonym -- an antonym of word that may be a morphological antonym of word
+    lowercase -- optional parameter, when lowercase = false the words are not lowercased
+    '''
+    if lowercase:
+        antonym = antonym.lower()
+        word = word.lower()
+
+    for prefix in ('ir', 'in', 'im', 'un', 'dis'):
+        p_len = len(prefix)
+
+        # antonym - prefix = word and antonym starts with prefix
+        if antonym[p_len:] == word and antonym[:p_len] == prefix:
+            return True
+
+    return False
+
+    # # TESTS
+    # tests = [('heaLthy', 'Unhealthy'), ('rational', 'irrational'),
+    #          ('honest', 'dishonest'), ('possible', 'impossible'),
+    #          ('different', 'indifferent'), ('honest', 'disshonest')]
