@@ -1,3 +1,4 @@
+from wordfreq import zipf_frequency
 import gensim.downloader as api
 import csv
 import json
@@ -298,3 +299,90 @@ def find_morphological_antonyms(data, all = False):
                     morph_ants[word] = prob_or_sim
 
     return morph_ants
+
+
+def find_word_freq(data, keep_all = False):
+    '''
+    Given some data (in the format returned by calculate_transition_prob()), append word frequency
+    data. The returned dictionary is triply nested (the input is doubly nested). The transition
+    probability from the original data is now stored with the 'trans-prob' key. Additionally,
+    two more fields ('freq-absolute' and 'freq-relative') have also been added. Both metrics
+    rely on the Zipf frequency as returned by the Python package "wordfreq" (see:
+    https://pypi.org/project/wordfreq/). The absolute metric is the frequency of the specific
+    antonym whereas the relative metric is the Zipf frequency of antonym minus Zipf frequency of
+    the stimulus word. Thus, a positive relative frequency means the antonym is more common than
+    the presented word and a negative relative frequency means less common.
+
+    NOTE: Some extremely rare words do not show up in the "wordfreq" package (and thus assigned an
+    absolute frequency of 0). This function removes all such words unless keep_all is True.
+
+    Example:
+    {'adventurous': {'boring': {'freq-absolute': 4.39,
+                                'freq-relative': 0.9299999999999997,
+                                'trans-prob': 0.16666666666666666},
+                     'cautious': {'freq-absolute': 3.81,
+                                  'freq-relative': 0.3500000000000001,
+                                  'trans-prob': 0.1111111111111111},
+                     'conventional': {'freq-absolute': 4.3,
+                                      'freq-relative': 0.8399999999999999,
+                                      'trans-prob': 0.05555555555555555},
+                     'dull': {'freq-absolute': 3.91,
+                              'freq-relative': 0.4500000000000002,
+                              'trans-prob': 0.05555555555555555},
+                     'home': {'freq-absolute': 5.74,
+                              'freq-relative': 2.2800000000000002,
+                              'trans-prob': 0.05555555555555555},
+                     'homebody': {'freq-absolute': 1.98,
+                                  'freq-relative': -1.48,
+                                  'trans-prob': 0.05555555555555555},
+                     'lame': {'freq-absolute': 3.96,
+                              'freq-relative': 0.5,
+                              'trans-prob': 0.05555555555555555},
+                     **etc.},
+ 'affectionate': {'aloof': {'freq-absolute': 2.92,
+                            'freq-relative': -0.3500000000000001,
+                            'trans-prob': 0.05555555555555555},
+                  'cold': {'freq-absolute': 5.03,
+                           'freq-relative': 1.7600000000000002,
+                           'trans-prob': 0.4444444444444444},
+                  'distant': {'freq-absolute': 4.2,
+                              'freq-relative': 0.9300000000000002,
+                              'trans-prob': 0.05555555555555555},
+                  'glum': {'freq-absolute': 2.52,
+                           'freq-relative': -0.75,
+                           'trans-prob': 0.05555555555555555},
+                  'hateful': {'freq-absolute': 3.38,
+                              'freq-relative': 0.10999999999999988,
+                              'trans-prob': 0.05555555555555555},
+                  'mean': {'freq-absolute': 5.53,
+                           'freq-relative': 2.2600000000000002,
+                           'trans-prob': 0.05555555555555555},
+                  'unaffectionate': {'freq-absolute': 1.12,
+                                     'freq-relative': -2.15,
+                                     'trans-prob': 0.2777777777777778}}}
+
+    Keyword arguments:
+    data -- experimental data (from calculate_transition_prob())
+    keep_all -- optional parameter, if True, all antonyms will be kept even if
+                    their absolute frequency is 0 (untracked by "wordfreq")
+    '''
+    word_freq_data = {}
+    for word, ants in data.items():
+        wordf = zipf_frequency(word, "en")
+        ants_data = {}
+
+        for ant, prob in ants.items():
+            antf = zipf_frequency(ant, "en")
+
+            if antf == 0:
+                if keep_all:
+                    ants_data[ant] = {'freq-relative': antf-wordf,
+                                       'freq-absolute': antf,
+                                       'trans-prob': prob}
+            else:
+                ants_data[ant] = {'freq-relative': antf-wordf,
+                                       'freq-absolute': antf,
+                                       'trans-prob': prob}
+
+        word_freq_data[word] = ants_data
+    return word_freq_data
