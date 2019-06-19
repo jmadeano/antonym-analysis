@@ -1,5 +1,6 @@
 from wordfreq import zipf_frequency
 import gensim.downloader as api
+import numpy as np
 import csv
 import json
 
