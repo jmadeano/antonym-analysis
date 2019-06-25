@@ -1,10 +1,5 @@
 from helpers import *
 from pprint import pprint
-from scipy import stats
-import pandas as pd
-import seaborn as sns
-import matplotlib.pyplot as plt
-import scipy.stats as stats
 
 # Analysis should always start with reading from a file. To update models or seed
 #   words, go to update-models.py
@@ -54,65 +49,33 @@ for word, ants in word_freq.items():
 
 # pprint(data)
 
-
-
 filename = '6_antonym-elicitation-trials.csv'
 ant_list = generate_antonym_list(filename)
 trans_map = calculate_transition_prob(ant_list)
 # pprint(trans_map)
 
-# Read pandas from csv data
-test = pd.read_csv(filename)
+df = make_dataframe(filename)
 
-# Detect terminal width for dataframe printing
-pd.options.display.width = 0
+print(df)
 
-# Keep only these three fields... Be careful (names will change after experiment)
-filtered = test[['positive', 'antonym', 'response']]
-
-# Strip leading/trailing whitespace and lowercase all stimuli and responses
-filtered['response'] = filtered['response'].apply(lambda word: word.lower().strip())
-filtered['positive'] = filtered['positive'].apply(lambda word: word.lower().strip())
-
-# Sort by stimuli and then response
-sorted = filtered.sort_values(['positive', 'response'])
-
-# Add a column for response count
-sorted = sorted.assign(ant_count = sorted.groupby(['positive', 'response']).response.transform('count'))
-
-# Remove duplicates (because we have a count)
-sorted  = sorted.drop_duplicates()
-
-# Calculate transition probability: specific_antonym.count()/all_antonyms.count()
-sorted = sorted.assign(trans_prob = sorted.groupby('positive').transform(lambda x: x/x.sum()))
-sorted = sorted.reset_index(drop = True)# Add bool column for morphological antonyms
-
-# Add bool column for morphological antonyms
-sorted = sorted.assign(is_morph = sorted['response'] == sorted['antonym'])
-
-# Add word frequencies for response words
-sorted = sorted.assign(freq_absolute = sorted['response'].apply(lambda word: zipf_frequency(word, 'en')))
-
-# Add relative word frequencies: response_freq - stimuli_freq
-sorted = sorted.assign(freq_relative = sorted['freq_absolute'] - sorted['positive'].apply(lambda word: zipf_frequency(word, 'en')))
 
 
 # Check if transition probability correlates with word frequency
-availability = sorted[['trans_prob', 'freq_absolute', 'freq_relative']]
+availability = df[['trans_prob', 'freq_absolute', 'freq_relative']]
 
 
 cond = availability['trans_prob'] > .12
 availability = availability[cond] # filter low prob transitions
 
 availability_check = availability.corr() # calculate the correlation
-# print(availability_check)
+print(availability_check)
 
-# sns.set()
-# sns.relplot(x="freq_absolute", y="trans_prob", data=availability);
-# plt.show()
+sns.set()
+sns.relplot(x="freq_absolute", y="trans_prob", data=availability);
+plt.show()
 
-# print(stats.pearsonr(availability['trans_prob'], availability['freq_absolute']))
-# print(stats.linregress(sorted['trans_prob'], sorted['freq_relative']))
+print(stats.pearsonr(availability['trans_prob'], availability['freq_absolute']))
+print(stats.linregress(df['trans_prob'], df['freq_relative']))
 
 '''
 NOTES:
